@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ProjectCard } from "./project-card";
 import { projects, categories } from "@/lib/projects";
 import { cn } from "@/lib/utils";
@@ -23,47 +23,58 @@ export function ProjectGrid() {
         transition={{ duration: 0.5 }}
         className="mb-12 text-center"
       >
-        <h2 className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
-          What&apos;s <span className="gradient-text">cooking</span>
+        <h2 className="mb-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
+          What&apos;s <span className="squiggle">cooking</span>
         </h2>
         <p className="mx-auto max-w-md text-muted">
           Games, tools, and experiments — each one built to spark a little joy.
         </p>
       </motion.div>
 
-      {/* Category filter */}
+      {/* Category filter pills */}
       <div className="mb-10 flex flex-wrap justify-center gap-2">
         {categories.map((cat) => (
           <button
             key={cat.id}
             onClick={() => setActiveCategory(cat.id)}
             className={cn(
-              "rounded-full px-4 py-1.5 text-sm font-medium transition-all",
+              "bouncy rounded-full px-4 py-2 text-sm font-semibold transition-all",
               activeCategory === cat.id
-                ? "bg-accent text-white shadow-lg shadow-accent/20"
-                : "bg-white/5 text-muted hover:bg-white/10 hover:text-foreground"
+                ? "bg-foreground text-background"
+                : "bg-warm-gray text-muted hover:text-foreground"
             )}
           >
+            <span className="mr-1.5">{cat.emoji}</span>
             {cat.label}
           </button>
         ))}
       </div>
 
-      {/* Grid */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {filteredProjects.map((project, i) => (
-          <ProjectCard key={project.id} project={project} index={i} />
-        ))}
-      </div>
+      {/* Bento grid */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeCategory}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.3 }}
+          className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+        >
+          {filteredProjects.map((project, i) => (
+            <ProjectCard key={project.id} project={project} index={i} />
+          ))}
+        </motion.div>
+      </AnimatePresence>
 
       {filteredProjects.length === 0 && (
-        <motion.p
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="py-20 text-center text-muted"
+          className="flex flex-col items-center gap-2 py-20 text-center"
         >
-          No projects in this category yet. Stay tuned!
-        </motion.p>
+          <span className="text-4xl">🏗️</span>
+          <p className="text-muted">Nothing here yet. Stay tuned!</p>
+        </motion.div>
       )}
     </section>
   );

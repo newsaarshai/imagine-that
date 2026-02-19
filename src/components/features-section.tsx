@@ -1,57 +1,35 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Gamepad2, Palette, Zap, Users } from "lucide-react";
 
-const features = [
-  {
-    icon: Gamepad2,
-    title: "Mini Games",
-    description: "Quick, fun games you can play in your browser. No downloads needed.",
-  },
-  {
-    icon: Palette,
-    title: "Creative Tools",
-    description: "Useful utilities and generators for designers, developers, and creators.",
-  },
-  {
-    icon: Zap,
-    title: "Experiments",
-    description: "Wild ideas and interactive prototypes pushing what's possible on the web.",
-  },
-  {
-    icon: Users,
-    title: "Community",
-    description: "Share scores, save progress, and see what others are building.",
-  },
+const items = [
+  { emoji: "🎮", label: "Games", color: "bg-coral/10 text-coral" },
+  { emoji: "🔧", label: "Tools", color: "bg-accent/10 text-accent" },
+  { emoji: "🧪", label: "Experiments", color: "bg-amber/10 text-amber" },
+  { emoji: "📱", label: "Apps", color: "bg-mint/10 text-mint" },
+  { emoji: "🎮", label: "Games", color: "bg-coral/10 text-coral" },
+  { emoji: "🔧", label: "Tools", color: "bg-accent/10 text-accent" },
+  { emoji: "🧪", label: "Experiments", color: "bg-amber/10 text-amber" },
+  { emoji: "📱", label: "Apps", color: "bg-mint/10 text-mint" },
 ];
 
 export function FeaturesSection() {
   return (
-    <section className="relative border-y border-white/5 bg-card-bg/50">
-      <div className="mx-auto max-w-6xl px-6 py-24">
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {features.map((feature, i) => (
-            <motion.div
-              key={feature.title}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
-              className="group text-center"
-            >
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-accent/10 text-accent-light transition-colors group-hover:bg-accent/20">
-                <feature.icon className="h-5 w-5" />
-              </div>
-              <h3 className="mb-2 text-sm font-semibold tracking-tight">
-                {feature.title}
-              </h3>
-              <p className="text-sm leading-relaxed text-muted">
-                {feature.description}
-              </p>
-            </motion.div>
-          ))}
-        </div>
+    <section className="overflow-hidden border-y border-card-border/60 bg-warm-gray/50 py-5">
+      <div className="flex w-max marquee">
+        {[...items, ...items].map((item, i) => (
+          <motion.div
+            key={i}
+            className="flex items-center gap-6 px-6"
+            whileHover={{ scale: 1.05 }}
+          >
+            <div className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${item.color}`}>
+              <span className="text-lg">{item.emoji}</span>
+              {item.label}
+            </div>
+            <span className="text-card-border">✦</span>
+          </motion.div>
+        ))}
       </div>
     </section>
   );

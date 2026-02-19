@@ -1,24 +1,9 @@
 "use client";
 
-import { useRef } from "react";
 import { motion } from "framer-motion";
-import { ArrowUpRight, Gamepad2, Wrench, FlaskConical, AppWindow } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import type { Project } from "@/lib/projects";
-
-const categoryIcons = {
-  game: Gamepad2,
-  tool: Wrench,
-  experiment: FlaskConical,
-  app: AppWindow,
-};
-
-const categoryColors = {
-  game: "from-emerald-500/20 to-emerald-500/5 text-emerald-400 border-emerald-500/20",
-  tool: "from-blue-500/20 to-blue-500/5 text-blue-400 border-blue-500/20",
-  experiment: "from-amber-500/20 to-amber-500/5 text-amber-400 border-amber-500/20",
-  app: "from-rose-500/20 to-rose-500/5 text-rose-400 border-rose-500/20",
-};
 
 export function ProjectCard({
   project,
@@ -27,19 +12,6 @@ export function ProjectCard({
   project: Project;
   index: number;
 }) {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const Icon = categoryIcons[project.category];
-  const colorClass = categoryColors[project.category];
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    cardRef.current.style.setProperty("--card-mouse-x", `${x}%`);
-    cardRef.current.style.setProperty("--card-mouse-y", `${y}%`);
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -48,60 +20,72 @@ export function ProjectCard({
       transition={{ duration: 0.5, delay: index * 0.1 }}
     >
       <Link href={project.href}>
-        <div
-          ref={cardRef}
-          onMouseMove={handleMouseMove}
-          className="group relative overflow-hidden rounded-2xl border border-card-border bg-card-bg p-6 transition-all duration-300 hover:border-accent/30 hover:shadow-lg hover:shadow-accent/5"
-          style={{
-            background: `radial-gradient(600px circle at var(--card-mouse-x, 50%) var(--card-mouse-y, 50%), rgba(108, 92, 231, 0.04), transparent 40%)`,
-          }}
-        >
-          {/* Category badge */}
-          <div className="mb-4 flex items-center justify-between">
-            <div
-              className={`inline-flex items-center gap-1.5 rounded-full border bg-gradient-to-r px-3 py-1 text-xs font-medium ${colorClass}`}
+        <div className="card-shadow group relative overflow-hidden rounded-2xl border border-card-border bg-card-bg">
+          {/* Colored top bar */}
+          <div
+            className="flex h-32 items-center justify-center"
+            style={{ backgroundColor: `${project.color}15` }}
+          >
+            <motion.span
+              className="text-5xl select-none"
+              whileHover={{ scale: 1.3, rotate: 10 }}
+              transition={{ type: "spring", stiffness: 300 }}
             >
-              <Icon className="h-3 w-3" />
-              {project.category}
-            </div>
-            {project.status === "coming-soon" && (
-              <span className="rounded-full bg-white/5 px-2.5 py-0.5 text-[10px] uppercase tracking-wider text-muted">
-                Coming Soon
-              </span>
-            )}
-            {project.status === "beta" && (
-              <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[10px] uppercase tracking-wider text-amber-400">
-                Beta
-              </span>
-            )}
+              {project.emoji}
+            </motion.span>
           </div>
 
-          {/* Title */}
-          <h3 className="mb-2 text-lg font-semibold tracking-tight text-foreground transition-colors group-hover:text-accent-light">
-            {project.title}
-          </h3>
-
-          {/* Description */}
-          <p className="mb-5 text-sm leading-relaxed text-muted">
-            {project.description}
-          </p>
-
-          {/* Tags */}
-          <div className="mb-4 flex flex-wrap gap-2">
-            {project.tags.map((tag) => (
+          <div className="p-5">
+            {/* Status + category */}
+            <div className="mb-3 flex items-center justify-between">
               <span
-                key={tag}
-                className="rounded-md bg-white/5 px-2 py-0.5 text-xs text-muted/80"
+                className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                style={{
+                  backgroundColor: `${project.color}15`,
+                  color: project.color,
+                }}
               >
-                {tag}
+                {project.category}
               </span>
-            ))}
-          </div>
+              {project.status === "coming-soon" && (
+                <span className="rounded-full bg-warm-gray px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted">
+                  Coming Soon
+                </span>
+              )}
+              {project.status === "beta" && (
+                <span className="rounded-full bg-amber/10 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-amber">
+                  Beta
+                </span>
+              )}
+            </div>
 
-          {/* Arrow indicator */}
-          <div className="flex items-center gap-1 text-xs text-muted transition-all group-hover:gap-2 group-hover:text-accent-light">
-            {project.status === "live" ? "Open" : "View details"}
-            <ArrowUpRight className="h-3 w-3 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+            {/* Title */}
+            <h3 className="mb-1.5 text-lg font-bold tracking-tight text-foreground">
+              {project.title}
+            </h3>
+
+            {/* Description */}
+            <p className="mb-4 text-sm leading-relaxed text-muted">
+              {project.description}
+            </p>
+
+            {/* Tags */}
+            <div className="mb-3 flex flex-wrap gap-1.5">
+              {project.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-md bg-warm-gray px-2 py-0.5 text-xs font-medium text-muted"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+
+            {/* Link hint */}
+            <div className="flex items-center gap-1 text-xs font-medium text-muted transition-all group-hover:gap-2 group-hover:text-foreground">
+              {project.status === "live" ? "Play now" : "View details"}
+              <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+            </div>
           </div>
         </div>
       </Link>

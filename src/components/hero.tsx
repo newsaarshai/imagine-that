@@ -1,157 +1,121 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { ArrowDown } from "lucide-react";
 import Link from "next/link";
 
-function FloatingOrb({
-  delay,
-  size,
-  x,
-  y,
-  color,
-}: {
-  delay: number;
-  size: number;
-  x: string;
-  y: string;
-  color: string;
-}) {
-  return (
-    <motion.div
-      className="absolute rounded-full blur-3xl"
-      style={{
-        width: size,
-        height: size,
-        left: x,
-        top: y,
-        background: color,
-      }}
-      animate={{
-        y: [0, -30, 0],
-        x: [0, 15, 0],
-        scale: [1, 1.1, 1],
-        opacity: [0.3, 0.5, 0.3],
-      }}
-      transition={{
-        duration: 8,
-        delay,
-        repeat: Infinity,
-        ease: "easeInOut",
-      }}
-    />
-  );
-}
+const floatingEmojis = [
+  { emoji: "🎮", x: "12%", y: "18%", delay: 0, className: "float text-3xl" },
+  { emoji: "🧪", x: "85%", y: "22%", delay: 0.5, className: "float float-delay-1 text-2xl" },
+  { emoji: "🎨", x: "8%", y: "70%", delay: 1, className: "float float-delay-2 text-2xl" },
+  { emoji: "⚡", x: "90%", y: "65%", delay: 1.5, className: "float text-xl" },
+  { emoji: "🌈", x: "75%", y: "80%", delay: 2, className: "float float-delay-1 text-3xl" },
+  { emoji: "🔮", x: "20%", y: "85%", delay: 0.8, className: "float float-delay-2 text-xl" },
+];
 
 export function Hero() {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      const rect = container.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 100;
-      const y = ((e.clientY - rect.top) / rect.height) * 100;
-      container.style.setProperty("--mouse-x", `${x}%`);
-      container.style.setProperty("--mouse-y", `${y}%`);
-    };
-
-    container.addEventListener("mousemove", handleMouseMove);
-    return () => container.removeEventListener("mousemove", handleMouseMove);
-  }, []);
-
   return (
-    <section
-      ref={containerRef}
-      className="spotlight relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6"
-    >
-      {/* Floating orbs */}
-      <FloatingOrb delay={0} size={400} x="10%" y="20%" color="rgba(108, 92, 231, 0.15)" />
-      <FloatingOrb delay={2} size={300} x="70%" y="10%" color="rgba(253, 121, 168, 0.1)" />
-      <FloatingOrb delay={4} size={350} x="50%" y="60%" color="rgba(162, 155, 254, 0.1)" />
+    <section className="relative flex min-h-[90vh] flex-col items-center justify-center overflow-hidden px-6 pt-16">
+      <div className="dot-grid absolute inset-0 opacity-50" />
 
-      {/* Grid background */}
-      <div className="grid-bg absolute inset-0" />
+      <div className="absolute left-[10%] top-[20%] h-72 w-72 rounded-full bg-accent/[0.06] blur-3xl" />
+      <div className="absolute right-[10%] top-[30%] h-64 w-64 rounded-full bg-coral/[0.06] blur-3xl" />
+      <div className="absolute bottom-[20%] left-[30%] h-56 w-56 rounded-full bg-amber/[0.06] blur-3xl" />
 
-      {/* Content */}
-      <div className="relative z-10 flex max-w-3xl flex-col items-center text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="mb-6 inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/5 px-4 py-1.5 text-xs text-accent-light"
+      {floatingEmojis.map((item, i) => (
+        <motion.span
+          key={i}
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.8 + item.delay, type: "spring", stiffness: 200 }}
+          className={`absolute select-none ${item.className}`}
+          style={{ left: item.x, top: item.y }}
         >
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-light opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-accent-light" />
-          </span>
-          A playground for creative apps
+          {item.emoji}
+        </motion.span>
+      ))}
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.15 }}
+        transition={{ delay: 1.2 }}
+        className="spin-slow absolute right-[15%] top-[15%] text-6xl text-amber select-none"
+      >
+        ✦
+      </motion.div>
+
+      <div className="relative z-10 flex max-w-2xl flex-col items-center text-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="mb-6 inline-flex items-center gap-2 rounded-full border-2 border-dashed border-accent/30 bg-accent/5 px-5 py-2 text-sm font-medium text-accent"
+        >
+          <span className="hover-wiggle inline-block">🚀</span>
+          A playground for curious minds
         </motion.div>
 
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="mb-6 text-5xl font-bold leading-tight tracking-tight sm:text-7xl"
+          transition={{ duration: 0.6, delay: 0.15 }}
+          className="mb-6 text-5xl font-extrabold leading-tight tracking-tight sm:text-7xl"
         >
           imagine
           <span className="gradient-text">that</span>
-          <span className="text-accent-light">.</span>
+          <motion.span
+            animate={{ rotate: [0, 10, -10, 0] }}
+            transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+            className="inline-block origin-bottom"
+          >
+            .
+          </motion.span>
         </motion.h1>
 
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="mb-10 max-w-lg text-lg leading-relaxed text-muted"
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="mb-10 max-w-md text-lg leading-relaxed text-muted"
         >
-          A collection of mini games, creative tools, and experiments.
-          Built for fun, made to share.
+          Mini games, creative tools, and weird experiments
+          — all living under one roof.{" "}
+          <span className="squiggle">Come play.</span>
         </motion.p>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
+          transition={{ duration: 0.6, delay: 0.45 }}
           className="flex flex-col gap-4 sm:flex-row"
         >
           <Link
             href="/projects"
-            className="group relative inline-flex h-12 items-center justify-center gap-2 overflow-hidden rounded-xl bg-accent px-8 text-sm font-medium text-white transition-all hover:bg-accent/90 hover:shadow-lg hover:shadow-accent/25"
+            className="bouncy inline-flex h-12 items-center justify-center gap-2 rounded-full bg-foreground px-8 text-sm font-semibold text-background"
           >
-            <span className="relative z-10">Explore Projects</span>
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-accent via-accent-light to-accent"
-              animate={{ x: ["-100%", "100%"] }}
-              transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-              style={{ opacity: 0.3 }}
-            />
+            Browse Projects →
           </Link>
           <Link
             href="/about"
-            className="inline-flex h-12 items-center justify-center rounded-xl border border-white/10 px-8 text-sm font-medium text-muted transition-all hover:border-white/20 hover:text-foreground"
+            className="bouncy inline-flex h-12 items-center justify-center rounded-full border-2 border-card-border px-8 text-sm font-semibold text-foreground hover:border-foreground"
           >
-            Learn More
+            What is this?
           </Link>
         </motion.div>
       </div>
 
-      {/* Scroll indicator */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1.5 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2"
+        transition={{ delay: 2 }}
+        className="absolute bottom-6"
       >
-        <motion.div
-          animate={{ y: [0, 8, 0] }}
+        <motion.p
+          animate={{ y: [0, 6, 0] }}
           transition={{ duration: 2, repeat: Infinity }}
+          className="text-sm text-muted/40"
         >
-          <ArrowDown className="h-5 w-5 text-muted/40" />
-        </motion.div>
+          scroll ↓
+        </motion.p>
       </motion.div>
     </section>
   );

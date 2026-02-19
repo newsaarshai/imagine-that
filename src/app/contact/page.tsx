@@ -13,8 +13,16 @@ export default function ContactPage() {
           transition={{ duration: 0.5 }}
           className="mb-12 text-center"
         >
-          <h1 className="mb-4 text-4xl font-bold tracking-tight sm:text-5xl">
-            Get in <span className="gradient-text">touch</span>
+          <motion.span
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
+            className="mb-4 inline-block text-5xl"
+          >
+            👋
+          </motion.span>
+          <h1 className="mb-4 text-4xl font-extrabold tracking-tight sm:text-5xl">
+            Get in <span className="squiggle">touch</span>
           </h1>
           <p className="text-lg text-muted">
             Have an idea, found a bug, or just want to say hi?
@@ -29,23 +37,25 @@ export default function ContactPage() {
         >
           <a
             href="mailto:new.saar.shai@gmail.com"
-            className="group flex items-center gap-4 rounded-2xl border border-card-border bg-card-bg p-6 transition-all hover:border-accent/30 hover:shadow-lg hover:shadow-accent/5"
+            className="card-shadow group flex items-center gap-4 rounded-2xl border border-card-border bg-card-bg p-6"
           >
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/10 text-accent-light transition-colors group-hover:bg-accent/20">
-              <Mail className="h-5 w-5" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-coral/10">
+              <Mail className="h-5 w-5 text-coral" />
             </div>
             <div>
-              <h3 className="font-semibold">Email</h3>
-              <p className="text-sm text-muted">new.saar.shai@gmail.com</p>
+              <h3 className="font-bold">Email</h3>
+              <p className="text-sm text-muted group-hover:text-foreground transition-colors">
+                new.saar.shai@gmail.com
+              </p>
             </div>
           </a>
 
-          <div className="flex items-center gap-4 rounded-2xl border border-card-border bg-card-bg p-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/10 text-accent-light">
-              <MessageCircle className="h-5 w-5" />
+          <div className="card-shadow flex items-center gap-4 rounded-2xl border border-card-border bg-card-bg p-6">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/10">
+              <MessageCircle className="h-5 w-5 text-accent" />
             </div>
             <div>
-              <h3 className="font-semibold">Feedback</h3>
+              <h3 className="font-bold">Feedback</h3>
               <p className="text-sm text-muted">
                 More ways to reach out coming soon — including a feedback form
                 right here on the site.
