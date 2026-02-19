@@ -17,7 +17,14 @@ export function Hero() {
           transition={{ duration: 0.6 }}
           className="mb-5 text-5xl font-extrabold leading-tight tracking-tight sm:text-6xl"
         >
-          imagine<span className="gradient-text">that</span>.
+          imagine<span className="gradient-text">that</span>
+          <motion.span
+            animate={{ rotate: [0, 12, -8, 0] }}
+            transition={{ duration: 1.8, repeat: Infinity, repeatDelay: 4 }}
+            className="inline-block origin-bottom-left"
+          >
+            .
+          </motion.span>
         </motion.h1>
 
         <motion.p
