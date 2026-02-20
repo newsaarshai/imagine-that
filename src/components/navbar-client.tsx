@@ -10,6 +10,7 @@ import type { User } from "@supabase/supabase-js";
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/projects", label: "Projects" },
+  { href: "/prompt-composer", label: "Prompt Composer" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
 ];

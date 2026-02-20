@@ -125,3 +125,44 @@ html {
   to { transform: rotate(360deg); }
 }
 .spin-slow { animation: spin-slow 20s linear infinite; }
+
+/* ── Prompt Composer app tokens ────────────────────────────── */
+.prompt-composer {
+  --pc-bg: #F1F5F9;
+  --pc-panel-bg: #F8FAFC;
+  --pc-card-bg: #ffffff;
+  --pc-border: #E2E8F0;
+  --pc-text: #1E293B;
+  --pc-text-secondary: #334155;
+  --pc-text-muted: #94A3B8;
+  --pc-text-faint: #CBD5E1;
+  --pc-accent: #4F46E5;
+  --pc-accent-hover: #4338CA;
+  --pc-accent-bg: #EEF2FF;
+  --pc-success: #059669;
+  --pc-danger: #EF4444;
+  --pc-dark: #0F172A;
+  --pc-font-sans: var(--font-dm-sans), "Segoe UI", sans-serif;
+  --pc-font-mono: var(--font-ibm-plex-mono), monospace;
+  font-family: var(--pc-font-sans);
+  background: var(--pc-bg);
+  min-height: 100vh;
+}
+
+.prompt-composer *::selection {
+  background: #C7D2FE;
+}
+
+.prompt-composer textarea:focus,
+.prompt-composer input:focus {
+  border-color: #6366F1 !important;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.prompt-composer ::-webkit-scrollbar {
+  width: 5px;
+}
+.prompt-composer ::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 3px;
+}
