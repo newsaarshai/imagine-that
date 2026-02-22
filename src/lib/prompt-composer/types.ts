@@ -1,4 +1,6 @@
-export type SnippetCategory =
+// Global categories used for untyped (Blank) templates
+export type GlobalCategory =
+  | "Blank"
   | "Product"
   | "Material"
   | "Structure"
@@ -8,11 +10,23 @@ export type SnippetCategory =
   | "Photography"
   | "Constraints";
 
+// Category can be a global category or any custom string from a master template
+export type SnippetCategory = string;
+
+export interface TemplateType {
+  id: string;
+  user_id: string;
+  name: string;
+  master_template_id: string;
+  created_at: string;
+}
+
 export interface Template {
   id: string;
   user_id: string;
   name: string;
   sort_order: number;
+  type_id: string | null;
   created_at: string;
   updated_at: string;
 }

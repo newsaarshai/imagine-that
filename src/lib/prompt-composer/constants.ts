@@ -1,8 +1,10 @@
-import type { DefaultTemplate, SnippetCategory } from "./types";
+import type { DefaultTemplate, GlobalCategory } from "./types";
 
-export const APP_SUBTITLE = "Modular Image Prompt Builder";
+export const APP_SUBTITLE = "Modular Prompt Builder";
 
-export const CATEGORIES: SnippetCategory[] = [
+// Global categories for untyped (Blank) templates
+export const GLOBAL_CATEGORIES: GlobalCategory[] = [
+  "Blank",
   "Product",
   "Material",
   "Structure",
@@ -13,10 +15,9 @@ export const CATEGORIES: SnippetCategory[] = [
   "Constraints",
 ];
 
-export const CAT_COLORS: Record<
-  SnippetCategory,
-  { bg: string; border: string; dot: string }
-> = {
+// Colors for known categories. For unknown (custom) categories, use a default.
+export const CAT_COLORS: Record<string, { bg: string; border: string; dot: string }> = {
+  Blank: { bg: "#F1F5F9", border: "#94A3B8", dot: "#64748B" },
   Product: { bg: "#FEF3C7", border: "#F59E0B", dot: "#D97706" },
   Material: { bg: "#DBEAFE", border: "#3B82F6", dot: "#2563EB" },
   Structure: { bg: "#E0E7FF", border: "#6366F1", dot: "#4F46E5" },
@@ -27,122 +28,32 @@ export const CAT_COLORS: Record<
   Constraints: { bg: "#F1F5F9", border: "#64748B", dot: "#475569" },
 };
 
+export const DEFAULT_CAT_COLOR = { bg: "#F1F5F9", border: "#94A3B8", dot: "#64748B" };
+
+export function getCatColor(category: string) {
+  return CAT_COLORS[category] ?? DEFAULT_CAT_COLOR;
+}
+
 const SKYLINE_SNIPPETS = [
-  {
-    category: "Product" as SnippetCategory,
-    label: "Product Description",
-    active: true,
-    sort_order: 0,
-    text: "A product photograph of a decorative panel set made from PET-felt material. The product consists of {panelCount} interlocking panels that stand upright on a surface, forming a {shape} panoramic city-skyline silhouette.",
-  },
-  {
-    category: "Material" as SnippetCategory,
-    label: "Material & Texture",
-    active: true,
-    sort_order: 1,
-    text: "The panels are made of PET-felt — a thick, soft, matte textile with a fine fibrous surface texture similar to craft felt. The felt color is {feltColor}. The material has visible micro-fiber texture and soft rounded edges where cut.",
-  },
-  {
-    category: "Structure" as SnippetCategory,
-    label: "Two-Layer Construction",
-    active: true,
-    sort_order: 2,
-    text: "Each panel is constructed from two layers of PET-felt. The front layer features detailed illustrations painted or printed directly onto the felt surface. The back layer is a solid-colored felt backing that is slightly larger than the front, creating a {borderWidth} border/frame effect around each panel.",
-  },
-  {
-    category: "Theme" as SnippetCategory,
-    label: "Skyline Silhouette",
-    active: true,
-    sort_order: 3,
-    text: "The top edge of the panels follows the roofline silhouette of {cityName}, with recognizable landmarks and building shapes cut into the felt. The skyline reads as a continuous panorama across all panels.",
-  },
-  {
-    category: "Illustration" as SnippetCategory,
-    label: "Illustration Style",
-    active: true,
-    sort_order: 4,
-    text: "The illustrations on the front layer are rendered in a {illustrationStyle} style with {colorPalette} colors. The artwork depicts the {cityName} skyline with fine detail and a hand-crafted, artisanal quality.",
-  },
-  {
-    category: "Photography" as SnippetCategory,
-    label: "Shot & Lighting",
-    active: true,
-    sort_order: 5,
-    text: "Professional product photograph, shot straight-on at eye level against a clean {bgColor} background. Soft, even studio lighting with gentle shadows underneath and behind the panels. Sharp focus throughout.",
-  },
-  {
-    category: "Reference" as SnippetCategory,
-    label: "Reference Image",
-    active: false,
-    sort_order: 6,
-    text: "Use the uploaded reference image ({refImageFile}) as a guide for the overall product form, panel arrangement, and construction style. Match the same type of felt material, two-layer construction, and illustration-on-felt aesthetic.",
-  },
-  {
-    category: "Constraints" as SnippetCategory,
-    label: "Constraints",
-    active: false,
-    sort_order: 7,
-    text: "Do not add any people, hands, or props. Do not add text or labels unless specified. Keep the background clean. The felt must read as soft textile, not paper or cardboard.",
-  },
+  { category: "Product", label: "Product Description", active: true, sort_order: 0, text: "A product photograph of a decorative panel set made from PET-felt material. The product consists of {panelCount} interlocking panels that stand upright on a surface, forming a {shape} panoramic city-skyline silhouette." },
+  { category: "Material", label: "Material & Texture", active: true, sort_order: 1, text: "The panels are made of PET-felt — a thick, soft, matte textile with a fine fibrous surface texture similar to craft felt. The felt color is {feltColor}. The material has visible micro-fiber texture and soft rounded edges where cut." },
+  { category: "Structure", label: "Two-Layer Construction", active: true, sort_order: 2, text: "Each panel is constructed from two layers of PET-felt. The front layer features detailed illustrations painted or printed directly onto the felt surface. The back layer is a solid-colored felt backing that is slightly larger than the front, creating a {borderWidth} border/frame effect around each panel." },
+  { category: "Theme", label: "Skyline Silhouette", active: true, sort_order: 3, text: "The top edge of the panels follows the roofline silhouette of {cityName}, with recognizable landmarks and building shapes cut into the felt. The skyline reads as a continuous panorama across all panels." },
+  { category: "Illustration", label: "Illustration Style", active: true, sort_order: 4, text: "The illustrations on the front layer are rendered in a {illustrationStyle} style with {colorPalette} colors. The artwork depicts the {cityName} skyline with fine detail and a hand-crafted, artisanal quality." },
+  { category: "Photography", label: "Shot & Lighting", active: true, sort_order: 5, text: "Professional product photograph, shot straight-on at eye level against a clean {bgColor} background. Soft, even studio lighting with gentle shadows underneath and behind the panels. Sharp focus throughout." },
+  { category: "Reference", label: "Reference Image", active: false, sort_order: 6, text: "Use the uploaded reference image ({refImageFile}) as a guide for the overall product form, panel arrangement, and construction style. Match the same type of felt material, two-layer construction, and illustration-on-felt aesthetic." },
+  { category: "Constraints", label: "Constraints", active: false, sort_order: 7, text: "Do not add any people, hands, or props. Do not add text or labels unless specified. Keep the background clean. The felt must read as soft textile, not paper or cardboard." },
 ];
 
 const FACADE_SNIPPETS = [
-  {
-    category: "Product" as SnippetCategory,
-    label: "Product Description",
-    active: true,
-    sort_order: 0,
-    text: "A product photograph of a decorative panel set made from PET-felt material. The product consists of {panelCount} interlocking panels that stand upright, depicting the front facade of a {buildingStyle} building.",
-  },
-  {
-    category: "Material" as SnippetCategory,
-    label: "Material & Texture",
-    active: true,
-    sort_order: 1,
-    text: "The panels are made of PET-felt — a thick, soft, matte textile with a fine fibrous surface texture similar to craft felt. The felt color is {feltColor}. The material has visible micro-fiber texture and soft rounded edges where cut.",
-  },
-  {
-    category: "Structure" as SnippetCategory,
-    label: "Two-Layer Construction",
-    active: true,
-    sort_order: 2,
-    text: "Each panel is constructed from two layers of PET-felt. The front layer features detailed illustrations of the building facade painted onto the felt surface. The back layer is a solid-colored felt backing, slightly larger than the front, creating a {borderWidth} border effect.",
-  },
-  {
-    category: "Theme" as SnippetCategory,
-    label: "Facade Details",
-    active: true,
-    sort_order: 3,
-    text: "The panels together form the front elevation of a {buildingStyle} building. Architectural details include {archDetails}. The center panels feature a {doorwayType} that creates an actual opening/portal through the felt.",
-  },
-  {
-    category: "Illustration" as SnippetCategory,
-    label: "Illustration Style",
-    active: true,
-    sort_order: 4,
-    text: "The illustrations are rendered in a {illustrationStyle} style with {colorPalette} colors. Windows, doors, balconies, and greenery are depicted with fine detail. The artwork has a hand-crafted, artisanal quality.",
-  },
-  {
-    category: "Photography" as SnippetCategory,
-    label: "Shot & Lighting",
-    active: true,
-    sort_order: 5,
-    text: "Professional product photograph, shot straight-on at eye level against a clean {bgColor} background. Soft, even studio lighting with gentle shadows. Sharp focus throughout.",
-  },
-  {
-    category: "Reference" as SnippetCategory,
-    label: "Reference Image",
-    active: false,
-    sort_order: 6,
-    text: "Use the uploaded reference image ({refImageFile}) as a guide for the overall product form and construction style. Match the felt material, two-layer construction, and illustration-on-felt aesthetic.",
-  },
-  {
-    category: "Constraints" as SnippetCategory,
-    label: "Constraints",
-    active: false,
-    sort_order: 7,
-    text: "Do not add any people, hands, or props. Keep the background clean. The felt must read as soft textile, not paper or cardboard.",
-  },
+  { category: "Product", label: "Product Description", active: true, sort_order: 0, text: "A product photograph of a decorative panel set made from PET-felt material. The product consists of {panelCount} interlocking panels that stand upright, depicting the front facade of a {buildingStyle} building." },
+  { category: "Material", label: "Material & Texture", active: true, sort_order: 1, text: "The panels are made of PET-felt — a thick, soft, matte textile with a fine fibrous surface texture similar to craft felt. The felt color is {feltColor}. The material has visible micro-fiber texture and soft rounded edges where cut." },
+  { category: "Structure", label: "Two-Layer Construction", active: true, sort_order: 2, text: "Each panel is constructed from two layers of PET-felt. The front layer features detailed illustrations of the building facade painted onto the felt surface. The back layer is a solid-colored felt backing, slightly larger than the front, creating a {borderWidth} border effect." },
+  { category: "Theme", label: "Facade Details", active: true, sort_order: 3, text: "The panels together form the front elevation of a {buildingStyle} building. Architectural details include {archDetails}. The center panels feature a {doorwayType} that creates an actual opening/portal through the felt." },
+  { category: "Illustration", label: "Illustration Style", active: true, sort_order: 4, text: "The illustrations are rendered in a {illustrationStyle} style with {colorPalette} colors. Windows, doors, balconies, and greenery are depicted with fine detail. The artwork has a hand-crafted, artisanal quality." },
+  { category: "Photography", label: "Shot & Lighting", active: true, sort_order: 5, text: "Professional product photograph, shot straight-on at eye level against a clean {bgColor} background. Soft, even studio lighting with gentle shadows. Sharp focus throughout." },
+  { category: "Reference", label: "Reference Image", active: false, sort_order: 6, text: "Use the uploaded reference image ({refImageFile}) as a guide for the overall product form and construction style. Match the felt material, two-layer construction, and illustration-on-felt aesthetic." },
+  { category: "Constraints", label: "Constraints", active: false, sort_order: 7, text: "Do not add any people, hands, or props. Keep the background clean. The felt must read as soft textile, not paper or cardboard." },
 ];
 
 export const DEFAULT_TEMPLATES: DefaultTemplate[] = [

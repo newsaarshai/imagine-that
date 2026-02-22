@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { Snippet, SnippetCategory } from "@/lib/prompt-composer/types";
-import { CAT_COLORS, CATEGORIES } from "@/lib/prompt-composer/constants";
+import { getCatColor, GLOBAL_CATEGORIES } from "@/lib/prompt-composer/constants";
 import { extractPlaceholders, camelToLabel } from "@/lib/prompt-composer/utils";
 import { HighlightedTextarea } from "./highlighted-textarea";
 
@@ -12,6 +12,8 @@ interface SnippetCardProps {
   onDelete: (id: string) => void;
   onToggle: (id: string) => void;
   usedCategories: SnippetCategory[];
+  masterSnippets: Snippet[];
+  hasType: boolean;
 }
 
 export function SnippetCard({
@@ -20,8 +22,10 @@ export function SnippetCard({
   onDelete,
   onToggle,
   usedCategories,
+  masterSnippets,
+  hasType,
 }: SnippetCardProps) {
-  const colors = CAT_COLORS[snippet.category] || CAT_COLORS.Constraints;
+  const colors = getCatColor(snippet.category);
   const [open, setOpen] = useState(false);
   const [draftLabel, setDraftLabel] = useState(snippet.label);
   const [draftText, setDraftText] = useState(snippet.text);
@@ -40,6 +44,65 @@ export function SnippetCard({
 
   const placeholders = extractPlaceholders(snippet.text);
   const draftPlaceholders = extractPlaceholders(draftText);
+
+  // Build category options based on whether the template has a type
+  const categoryOptions: { value: string; label: string; disabled: boolean }[] = [];
+
+  if (hasType) {
+    // Typed template: "Blank" + master categories
+    categoryOptions.push({
+      value: "Blank",
+      label: "Blank",
+      disabled: false,
+    });
+    for (const ms of masterSnippets) {
+      const taken = usedCategories.includes(ms.category) && ms.category !== snippet.category;
+      categoryOptions.push({
+        value: ms.category,
+        label: `${ms.category} — ${ms.label}`,
+        disabled: taken,
+      });
+    }
+  } else {
+    // Untyped template: global categories
+    for (const cat of GLOBAL_CATEGORIES) {
+      const taken = usedCategories.includes(cat) && cat !== snippet.category;
+      categoryOptions.push({
+        value: cat,
+        label: cat,
+        disabled: taken,
+      });
+    }
+  }
+
+  // If the current snippet's category isn't in the options (orphaned), add it
+  if (!categoryOptions.some((o) => o.value === snippet.category)) {
+    categoryOptions.push({
+      value: snippet.category,
+      label: snippet.category,
+      disabled: false,
+    });
+  }
+
+  // Handle category change with pre-fill for typed templates
+  const handleCategoryChange = (newCategory: string) => {
+    setDraftCategory(newCategory);
+
+    if (hasType && newCategory !== "Blank") {
+      // Pre-fill from master snippet
+      const masterSnippet = masterSnippets.find((ms) => ms.category === newCategory);
+      if (masterSnippet) {
+        setDraftLabel(masterSnippet.label);
+        setDraftText(masterSnippet.text);
+      }
+    } else if (newCategory === "Blank") {
+      // Clear pre-fill for blank
+      if (snippet.category === "Blank" && !snippet.text) {
+        setDraftLabel("New Snippet");
+        setDraftText("");
+      }
+    }
+  };
 
   return (
     <div
@@ -177,7 +240,7 @@ export function SnippetCard({
                 }}
               />
             </div>
-            <div style={{ width: 150, flexShrink: 0 }}>
+            <div style={{ width: 200, flexShrink: 0 }}>
               <label
                 style={{
                   fontSize: 10.5,
@@ -191,9 +254,7 @@ export function SnippetCard({
               </label>
               <select
                 value={draftCategory}
-                onChange={(e) =>
-                  setDraftCategory(e.target.value as SnippetCategory)
-                }
+                onChange={(e) => handleCategoryChange(e.target.value)}
                 style={{
                   width: "100%",
                   fontSize: 13,
@@ -206,21 +267,17 @@ export function SnippetCard({
                   boxSizing: "border-box",
                 }}
               >
-                {CATEGORIES.map((cat) => {
-                  const taken =
-                    usedCategories.includes(cat) && cat !== snippet.category;
-                  return (
-                    <option
-                      key={cat}
-                      value={cat}
-                      disabled={taken}
-                      style={{ color: taken ? "#CBD5E1" : "#334155" }}
-                    >
-                      {cat}
-                      {taken ? " (used)" : ""}
-                    </option>
-                  );
-                })}
+                {categoryOptions.map((opt) => (
+                  <option
+                    key={opt.value}
+                    value={opt.value}
+                    disabled={opt.disabled}
+                    style={{ color: opt.disabled ? "#CBD5E1" : "#334155" }}
+                  >
+                    {opt.label}
+                    {opt.disabled ? " (used)" : ""}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

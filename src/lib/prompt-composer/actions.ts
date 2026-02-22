@@ -4,6 +4,7 @@ import type {
   Snippet,
   PlaceholderValue,
   TemplateWithSnippets,
+  TemplateType,
   SnippetCategory,
 } from "./types";
 import { DEFAULT_TEMPLATES } from "./constants";
@@ -16,8 +17,9 @@ export async function loadUserData(
 ): Promise<{
   templates: TemplateWithSnippets[];
   placeholderValues: PlaceholderValue[];
+  templateTypes: TemplateType[];
 }> {
-  const [templatesRes, snippetsRes, pvRes] = await Promise.all([
+  const [templatesRes, snippetsRes, pvRes, typesRes] = await Promise.all([
     supabase
       .from("templates")
       .select("*")
@@ -32,6 +34,11 @@ export async function loadUserData(
       .from("placeholder_values")
       .select("*")
       .eq("user_id", userId),
+    supabase
+      .from("template_types")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at"),
   ]);
 
   const templates: Template[] = templatesRes.data ?? [];
@@ -40,13 +47,14 @@ export async function loadUserData(
     ({ templates: _t, ...rest }) => rest as Snippet
   );
   const placeholderValues: PlaceholderValue[] = pvRes.data ?? [];
+  const templateTypes: TemplateType[] = typesRes.data ?? [];
 
   const templatesWithSnippets: TemplateWithSnippets[] = templates.map((t) => ({
     ...t,
     snippets: snippets.filter((s) => s.template_id === t.id),
   }));
 
-  return { templates: templatesWithSnippets, placeholderValues };
+  return { templates: templatesWithSnippets, placeholderValues, templateTypes };
 }
 
 // ── Seed default templates for new users ────────────────────────
@@ -54,8 +62,9 @@ export async function loadUserData(
 export async function seedDefaultTemplates(
   supabase: SupabaseClient,
   userId: string
-): Promise<TemplateWithSnippets[]> {
+): Promise<{ templates: TemplateWithSnippets[]; templateTypes: TemplateType[] }> {
   const result: TemplateWithSnippets[] = [];
+  const types: TemplateType[] = [];
 
   for (let i = 0; i < DEFAULT_TEMPLATES.length; i++) {
     const dt = DEFAULT_TEMPLATES[i];
@@ -87,7 +96,73 @@ export async function seedDefaultTemplates(
     result.push({ ...(tpl as Template), snippets });
   }
 
-  return result;
+  return { templates: result, templateTypes: types };
+}
+
+// ── Template Type CRUD ──────────────────────────────────────────
+
+export async function createTemplateType(
+  supabase: SupabaseClient,
+  userId: string,
+  name: string,
+  masterTemplateId: string
+): Promise<TemplateType | null> {
+  const { data, error } = await supabase
+    .from("template_types")
+    .insert({
+      user_id: userId,
+      name,
+      master_template_id: masterTemplateId,
+    })
+    .select()
+    .single();
+  if (error) return null;
+  return data as TemplateType;
+}
+
+export async function updateTemplateType(
+  supabase: SupabaseClient,
+  typeId: string,
+  templateId: string
+): Promise<void> {
+  await supabase
+    .from("templates")
+    .update({ type_id: typeId })
+    .eq("id", templateId);
+}
+
+export async function deleteTemplateType(
+  supabase: SupabaseClient,
+  typeId: string
+): Promise<void> {
+  await supabase.from("template_types").delete().eq("id", typeId);
+}
+
+/** Count how many non-master templates use a given type */
+export async function countTemplatesOfType(
+  supabase: SupabaseClient,
+  typeId: string,
+  masterTemplateId: string
+): Promise<number> {
+  const { count } = await supabase
+    .from("templates")
+    .select("id", { count: "exact", head: true })
+    .eq("type_id", typeId)
+    .neq("id", masterTemplateId);
+  return count ?? 0;
+}
+
+/** Get the master template's snippets (for pre-filling new snippets) */
+export async function getMasterSnippets(
+  supabase: SupabaseClient,
+  masterTemplateId: string
+): Promise<Snippet[]> {
+  const { data } = await supabase
+    .from("snippets")
+    .select("*")
+    .eq("template_id", masterTemplateId)
+    .order("sort_order");
+  return (data ?? []) as Snippet[];
 }
 
 // ── Template CRUD ───────────────────────────────────────────────
@@ -96,11 +171,17 @@ export async function createTemplate(
   supabase: SupabaseClient,
   userId: string,
   name: string,
-  sortOrder: number
+  sortOrder: number,
+  typeId?: string | null
 ): Promise<Template | null> {
   const { data, error } = await supabase
     .from("templates")
-    .insert({ user_id: userId, name, sort_order: sortOrder })
+    .insert({
+      user_id: userId,
+      name,
+      sort_order: sortOrder,
+      type_id: typeId ?? null,
+    })
     .select()
     .single();
   if (error) return null;
@@ -115,6 +196,17 @@ export async function updateTemplateName(
   await supabase
     .from("templates")
     .update({ name, updated_at: new Date().toISOString() })
+    .eq("id", templateId);
+}
+
+export async function updateTemplateTypeId(
+  supabase: SupabaseClient,
+  templateId: string,
+  typeId: string | null
+): Promise<void> {
+  await supabase
+    .from("templates")
+    .update({ type_id: typeId, updated_at: new Date().toISOString() })
     .eq("id", templateId);
 }
 

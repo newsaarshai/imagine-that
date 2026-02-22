@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import type { TemplateWithSnippets } from "@/lib/prompt-composer/types";
+import type { TemplateWithSnippets, TemplateType } from "@/lib/prompt-composer/types";
 
 interface TemplateBarProps {
   templates: TemplateWithSnippets[];
+  templateTypes: TemplateType[];
   activeTemplateId: string;
   onSelect: (id: string) => void;
   onAdd: () => void;
@@ -14,6 +15,7 @@ interface TemplateBarProps {
 
 export function TemplateBar({
   templates,
+  templateTypes,
   activeTemplateId,
   onSelect,
   onAdd,
@@ -58,6 +60,12 @@ export function TemplateBar({
 
       {templates.map((t) => {
         const active = t.id === activeTemplateId;
+        const type = t.type_id
+          ? templateTypes.find((tt) => tt.id === t.type_id)
+          : null;
+        const isMaster = type
+          ? type.master_template_id === t.id
+          : false;
 
         if (renamingId === t.id) {
           return (
@@ -104,12 +112,40 @@ export function TemplateBar({
                 cursor: "pointer",
                 fontFamily: "inherit",
                 transition: "all 0.15s",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
               }}
             >
+              {isMaster && (
+                <span
+                  style={{
+                    fontSize: 8.5,
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                    color: "#D97706",
+                    background: "#FEF3C7",
+                    padding: "1px 5px",
+                    borderRadius: 4,
+                    lineHeight: "14px",
+                  }}
+                >
+                  master
+                </span>
+              )}
               {t.name}
-              <span style={{ fontSize: 9.5, marginLeft: 5, color: "#94A3B8" }}>
-                ({t.snippets.filter((s) => s.active).length})
-              </span>
+              {type && (
+                <span
+                  style={{
+                    fontSize: 9.5,
+                    color: active ? "#818CF8" : "#94A3B8",
+                    fontWeight: 400,
+                  }}
+                >
+                  · {type.name}
+                </span>
+              )}
             </button>
             {templates.length > 1 && active && (
               <button

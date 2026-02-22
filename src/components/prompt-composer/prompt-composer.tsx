@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/client";
 import type {
   TemplateWithSnippets,
   PlaceholderValue,
+  TemplateType,
+  Snippet,
   SnippetCategory,
 } from "@/lib/prompt-composer/types";
 import {
@@ -16,6 +18,9 @@ import {
   toggleSnippetActive,
   deleteSnippet,
   upsertPlaceholderValue,
+  createTemplateType,
+  updateTemplateTypeId,
+  countTemplatesOfType,
 } from "@/lib/prompt-composer/actions";
 import { extractPlaceholders } from "@/lib/prompt-composer/utils";
 import { ComposerHeader } from "./composer-header";
@@ -28,16 +33,19 @@ import { PromptPreview } from "./prompt-preview";
 interface PromptComposerProps {
   initialTemplates: TemplateWithSnippets[];
   initialPlaceholderValues: PlaceholderValue[];
+  initialTemplateTypes: TemplateType[];
   userId: string;
 }
 
 export function PromptComposer({
   initialTemplates,
   initialPlaceholderValues,
+  initialTemplateTypes,
   userId,
 }: PromptComposerProps) {
   const supabase = useMemo(() => createClient(), []);
   const [templates, setTemplates] = useState(initialTemplates);
+  const [templateTypes, setTemplateTypes] = useState(initialTemplateTypes);
   const [activeTemplateId, setActiveTemplateId] = useState(
     initialTemplates[0]?.id ?? ""
   );
@@ -59,6 +67,20 @@ export function PromptComposer({
   const activeTemplate = templates.find((t) => t.id === activeTemplateId);
   const snippets = activeTemplate?.snippets ?? [];
   const currentPvs = pvMap[activeTemplateId] ?? {};
+
+  // Find the type for the active template
+  const activeType = activeTemplate?.type_id
+    ? templateTypes.find((tt) => tt.id === activeTemplate.type_id) ?? null
+    : null;
+
+  // Get master template's snippets (for pre-fill in typed templates)
+  const masterSnippets: Snippet[] = useMemo(() => {
+    if (!activeType) return [];
+    const masterTemplate = templates.find(
+      (t) => t.id === activeType.master_template_id
+    );
+    return masterTemplate?.snippets ?? [];
+  }, [activeType, templates]);
 
   // All placeholders across active snippets of the current template
   const allPlaceholders = useMemo(
@@ -97,7 +119,36 @@ export function PromptComposer({
   const handleDeleteTemplate = useCallback(
     async (id: string) => {
       if (templates.length <= 1) return;
+
+      // Check if this is a master template
+      const typeForTemplate = templateTypes.find(
+        (tt) => tt.master_template_id === id
+      );
+
+      if (typeForTemplate) {
+        // Count how many other templates use this type
+        const count = await countTemplatesOfType(
+          supabase,
+          typeForTemplate.id,
+          id
+        );
+        const msg =
+          count > 0
+            ? `This is the master template for "${typeForTemplate.name}". ${count} other template(s) use this type. Deleting it will make them untyped (Blank). Continue?`
+            : `This is the master template for "${typeForTemplate.name}". No other templates use this type. Delete it?`;
+
+        if (!confirm(msg)) return;
+
+        // Delete the type (cascade: templates.type_id → SET NULL)
+        // The template_types row is deleted when the master template is deleted
+        // because of ON DELETE CASCADE on master_template_id FK
+      } else {
+        if (!confirm("Delete this template?")) return;
+      }
+
       await deleteTemplate(supabase, id);
+
+      // Remove the template from state
       setTemplates((prev) => {
         const next = prev.filter((t) => t.id !== id);
         if (activeTemplateId === id) {
@@ -105,8 +156,22 @@ export function PromptComposer({
         }
         return next;
       });
+
+      // If it was a master template, remove the type and null out type_id on all affected templates
+      if (typeForTemplate) {
+        setTemplateTypes((prev) =>
+          prev.filter((tt) => tt.id !== typeForTemplate.id)
+        );
+        setTemplates((prev) =>
+          prev.map((t) =>
+            t.type_id === typeForTemplate.id
+              ? { ...t, type_id: null }
+              : t
+          )
+        );
+      }
     },
-    [supabase, templates.length, activeTemplateId]
+    [supabase, templates.length, activeTemplateId, templateTypes]
   );
 
   const handleRenameTemplate = useCallback(
@@ -119,6 +184,44 @@ export function PromptComposer({
     [supabase]
   );
 
+  // ── Template type operations ────────────────────────────────
+
+  const handleChangeTemplateType = useCallback(
+    async (templateId: string, typeId: string | null) => {
+      await updateTemplateTypeId(supabase, templateId, typeId);
+      setTemplates((prev) =>
+        prev.map((t) =>
+          t.id === templateId ? { ...t, type_id: typeId } : t
+        )
+      );
+    },
+    [supabase]
+  );
+
+  const handleCreateType = useCallback(
+    async (name: string, masterTemplateId: string) => {
+      const newType = await createTemplateType(
+        supabase,
+        userId,
+        name,
+        masterTemplateId
+      );
+      if (newType) {
+        setTemplateTypes((prev) => [...prev, newType]);
+        // Link the master template to this type
+        await updateTemplateTypeId(supabase, masterTemplateId, newType.id);
+        setTemplates((prev) =>
+          prev.map((t) =>
+            t.id === masterTemplateId
+              ? { ...t, type_id: newType.id }
+              : t
+          )
+        );
+      }
+    },
+    [supabase, userId]
+  );
+
   // ── Snippet operations ────────────────────────────────────
 
   const handleAddSnippet = useCallback(async () => {
@@ -126,7 +229,7 @@ export function PromptComposer({
     const snip = await createSnippet(
       supabase,
       activeTemplateId,
-      "Theme",
+      "Blank",
       "New Snippet",
       "",
       snippets.length
@@ -246,6 +349,7 @@ export function PromptComposer({
       <TipsPanel show={showTips} />
       <TemplateBar
         templates={templates}
+        templateTypes={templateTypes}
         activeTemplateId={activeTemplateId}
         onSelect={setActiveTemplateId}
         onAdd={handleAddTemplate}
@@ -262,10 +366,23 @@ export function PromptComposer({
       >
         <SnippetList
           snippets={snippets}
+          templateName={activeTemplate?.name ?? ""}
+          templateTypes={templateTypes}
+          activeType={activeType}
+          masterSnippets={masterSnippets}
           onSave={handleSaveSnippet}
           onDelete={handleDeleteSnippet}
           onToggle={handleToggleSnippet}
           onAdd={handleAddSnippet}
+          onRenameTemplate={(name) => {
+            if (activeTemplateId) handleRenameTemplate(activeTemplateId, name);
+          }}
+          onChangeType={(typeId) => {
+            if (activeTemplateId) handleChangeTemplateType(activeTemplateId, typeId);
+          }}
+          onCreateType={(name) => {
+            if (activeTemplateId) handleCreateType(name, activeTemplateId);
+          }}
           usedCategories={usedCategories}
         />
         <div style={{ display: "flex", flexDirection: "column" }}>

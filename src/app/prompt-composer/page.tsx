@@ -9,7 +9,7 @@ import { PromptComposer } from "@/components/prompt-composer/prompt-composer";
 export const metadata = {
   title: "Prompt Composer — imaginethat",
   description:
-    "Build modular image-generation prompts by toggling and editing reusable snippets.",
+    "Build modular prompts by toggling and editing reusable snippets.",
 };
 
 export default async function PromptComposerPage() {
@@ -26,7 +26,11 @@ export default async function PromptComposerPage() {
 
   if (data.templates.length === 0) {
     const seeded = await seedDefaultTemplates(supabase, user.id);
-    data = { templates: seeded, placeholderValues: [] };
+    data = {
+      templates: seeded.templates,
+      placeholderValues: [],
+      templateTypes: seeded.templateTypes,
+    };
   }
 
   return (
@@ -34,6 +38,7 @@ export default async function PromptComposerPage() {
       <PromptComposer
         initialTemplates={data.templates}
         initialPlaceholderValues={data.placeholderValues}
+        initialTemplateTypes={data.templateTypes}
         userId={user.id}
       />
     </div>
