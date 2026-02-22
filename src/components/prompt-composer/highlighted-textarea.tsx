@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef, useMemo, CSSProperties } from "react";
+import { useRef, useMemo, useEffect, CSSProperties } from "react";
 
 interface HighlightedTextareaProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  onSelectionChange?: (selection: { start: number; end: number; text: string } | null) => void;
   rows?: number;
 }
 
@@ -29,6 +30,7 @@ const SHARED_STYLE: CSSProperties = {
 export function HighlightedTextarea({
   value,
   onChange,
+  onSelectionChange,
   rows = 4,
 }: HighlightedTextareaProps) {
   const taRef = useRef<HTMLTextAreaElement>(null);
@@ -39,6 +41,33 @@ export function HighlightedTextarea({
       bgRef.current.scrollTop = taRef.current.scrollTop;
     }
   };
+
+  // Track text selection
+  useEffect(() => {
+    if (!onSelectionChange) return;
+    const ta = taRef.current;
+    if (!ta) return;
+
+    const handleSelect = () => {
+      const start = ta.selectionStart;
+      const end = ta.selectionEnd;
+      if (start !== end) {
+        onSelectionChange({ start, end, text: value.substring(start, end) });
+      } else {
+        onSelectionChange(null);
+      }
+    };
+
+    ta.addEventListener("select", handleSelect);
+    ta.addEventListener("click", handleSelect);
+    ta.addEventListener("keyup", handleSelect);
+
+    return () => {
+      ta.removeEventListener("select", handleSelect);
+      ta.removeEventListener("click", handleSelect);
+      ta.removeEventListener("keyup", handleSelect);
+    };
+  }, [onSelectionChange, value]);
 
   const highlighted = useMemo(() => {
     const escaped = value
@@ -62,6 +91,17 @@ export function HighlightedTextarea({
         overflow: "hidden",
       }}
     >
+      {/* CSS for selection color — needs a style tag because ::selection can't be inline */}
+      <style>{`
+        .ht-textarea::selection {
+          background: rgba(99, 102, 241, 0.3);
+          color: transparent;
+        }
+        .ht-textarea::-moz-selection {
+          background: rgba(99, 102, 241, 0.3);
+          color: transparent;
+        }
+      `}</style>
       <div
         ref={bgRef}
         style={{
@@ -80,6 +120,7 @@ export function HighlightedTextarea({
       />
       <textarea
         ref={taRef}
+        className="ht-textarea"
         value={value}
         onChange={onChange}
         onScroll={syncScroll}

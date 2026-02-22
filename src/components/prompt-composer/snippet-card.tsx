@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { Snippet, SnippetCategory } from "@/lib/prompt-composer/types";
 import { getCatColor, GLOBAL_CATEGORIES } from "@/lib/prompt-composer/constants";
-import { extractPlaceholders, camelToLabel } from "@/lib/prompt-composer/utils";
+import { extractPlaceholders, camelToLabel, PH_RE } from "@/lib/prompt-composer/utils";
 import { HighlightedTextarea } from "./highlighted-textarea";
 
 interface SnippetCardProps {
@@ -14,6 +14,19 @@ interface SnippetCardProps {
   usedCategories: SnippetCategory[];
   masterSnippets: Snippet[];
   hasType: boolean;
+}
+
+/** Check if a selection overlaps with any existing {placeholder} */
+function selectionOverlapsPlaceholder(text: string, start: number, end: number): boolean {
+  const re = new RegExp(PH_RE.source, PH_RE.flags);
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    const phStart = m.index;
+    const phEnd = m.index + m[0].length;
+    // Overlap if selection intersects with the placeholder range
+    if (start < phEnd && end > phStart) return true;
+  }
+  return false;
 }
 
 export function SnippetCard({
@@ -30,6 +43,7 @@ export function SnippetCard({
   const [draftLabel, setDraftLabel] = useState(snippet.label);
   const [draftText, setDraftText] = useState(snippet.text);
   const [draftCategory, setDraftCategory] = useState<SnippetCategory>(snippet.category);
+  const [selection, setSelection] = useState<{ start: number; end: number; text: string } | null>(null);
 
   useEffect(() => {
     setDraftLabel(snippet.label);
@@ -49,12 +63,7 @@ export function SnippetCard({
   const categoryOptions: { value: string; label: string; disabled: boolean }[] = [];
 
   if (hasType) {
-    // Typed template: "Blank" + master categories
-    categoryOptions.push({
-      value: "Blank",
-      label: "Blank",
-      disabled: false,
-    });
+    categoryOptions.push({ value: "Blank", label: "Blank", disabled: false });
     for (const ms of masterSnippets) {
       const taken = usedCategories.includes(ms.category) && ms.category !== snippet.category;
       categoryOptions.push({
@@ -64,45 +73,59 @@ export function SnippetCard({
       });
     }
   } else {
-    // Untyped template: global categories
     for (const cat of GLOBAL_CATEGORIES) {
       const taken = usedCategories.includes(cat) && cat !== snippet.category;
-      categoryOptions.push({
-        value: cat,
-        label: cat,
-        disabled: taken,
-      });
+      categoryOptions.push({ value: cat, label: cat, disabled: taken });
     }
   }
 
-  // If the current snippet's category isn't in the options (orphaned), add it
   if (!categoryOptions.some((o) => o.value === snippet.category)) {
-    categoryOptions.push({
-      value: snippet.category,
-      label: snippet.category,
-      disabled: false,
-    });
+    categoryOptions.push({ value: snippet.category, label: snippet.category, disabled: false });
   }
 
-  // Handle category change with pre-fill for typed templates
   const handleCategoryChange = (newCategory: string) => {
     setDraftCategory(newCategory);
-
     if (hasType && newCategory !== "Blank") {
-      // Pre-fill from master snippet
       const masterSnippet = masterSnippets.find((ms) => ms.category === newCategory);
       if (masterSnippet) {
         setDraftLabel(masterSnippet.label);
         setDraftText(masterSnippet.text);
       }
     } else if (newCategory === "Blank") {
-      // Clear pre-fill for blank
       if (snippet.category === "Blank" && !snippet.text) {
         setDraftLabel("New Snippet");
         setDraftText("");
       }
     }
   };
+
+  // ── Placeholder operations ──────────────────────────────
+
+  /** Remove {braces} from a placeholder, converting it back to normal text */
+  const handleUnwrapPlaceholder = useCallback(
+    (ph: string) => {
+      // Replace first occurrence of {ph} with just ph
+      setDraftText((prev) => prev.replace(`{${ph}}`, ph));
+      setSelection(null);
+    },
+    []
+  );
+
+  /** Wrap the current selection in {braces} to make it a placeholder */
+  const handleWrapSelection = useCallback(() => {
+    if (!selection) return;
+    const before = draftText.substring(0, selection.start);
+    const selected = draftText.substring(selection.start, selection.end);
+    const after = draftText.substring(selection.end);
+    setDraftText(before + "{" + selected + "}" + after);
+    setSelection(null);
+  }, [selection, draftText]);
+
+  // Can we show the + button? Only if selection exists and doesn't overlap an existing placeholder
+  const canWrapSelection =
+    selection &&
+    selection.text.trim().length > 0 &&
+    !selectionOverlapsPlaceholder(draftText, selection.start, selection.end);
 
   return (
     <div
@@ -299,13 +322,17 @@ export function SnippetCard({
           <HighlightedTextarea
             value={draftText}
             onChange={(e) => setDraftText(e.target.value)}
+            onSelectionChange={setSelection}
             rows={4}
           />
-          {draftPlaceholders.length > 0 && (
+
+          {/* Placeholder tags + wrap button */}
+          {(draftPlaceholders.length > 0 || canWrapSelection) && (
             <div
               style={{
                 display: "flex",
                 flexWrap: "wrap",
+                alignItems: "center",
                 gap: 5,
                 marginTop: 7,
               }}
@@ -321,13 +348,60 @@ export function SnippetCard({
                     color: "#92400E",
                     padding: "2px 7px",
                     borderRadius: 5,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
                   }}
                 >
                   {camelToLabel(ph)}
+                  <button
+                    onClick={() => handleUnwrapPlaceholder(ph)}
+                    title="Convert back to normal text"
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#D97706",
+                      cursor: "pointer",
+                      padding: 0,
+                      fontSize: 12,
+                      lineHeight: 1,
+                      fontWeight: 700,
+                      display: "inline-flex",
+                      alignItems: "center",
+                    }}
+                  >
+                    ×
+                  </button>
                 </span>
               ))}
+
+              {canWrapSelection && (
+                <button
+                  onClick={handleWrapSelection}
+                  title={`Make "${selection!.text}" a placeholder`}
+                  style={{
+                    fontSize: 10.5,
+                    fontWeight: 600,
+                    fontFamily:
+                      "var(--font-ibm-plex-mono), 'IBM Plex Mono', monospace",
+                    background: "#EEF2FF",
+                    color: "#4F46E5",
+                    border: "1.5px dashed #818CF8",
+                    borderRadius: 5,
+                    padding: "2px 8px",
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 3,
+                    animation: "fadeIn 0.15s ease-in",
+                  }}
+                >
+                  + Make placeholder
+                </button>
+              )}
             </div>
           )}
+
           <div
             style={{
               display: "flex",
