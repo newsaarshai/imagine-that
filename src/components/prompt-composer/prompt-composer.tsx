@@ -21,6 +21,8 @@ import {
   createTemplateType,
   updateTemplateTypeId,
   countTemplatesOfType,
+  reorderTemplates,
+  reorderSnippets,
 } from "@/lib/prompt-composer/actions";
 import { extractPlaceholders } from "@/lib/prompt-composer/utils";
 import { ComposerHeader } from "./composer-header";
@@ -222,6 +224,47 @@ export function PromptComposer({
     [supabase, userId]
   );
 
+  // ── Reorder operations ─────────────────────────────────────
+
+  const handleReorderTemplates = useCallback(
+    async (orderedIds: string[]) => {
+      // Optimistic: reorder in state
+      setTemplates((prev) => {
+        const map = new Map(prev.map((t) => [t.id, t]));
+        return orderedIds.map((id, i) => {
+          const t = map.get(id)!;
+          return { ...t, sort_order: i };
+        });
+      });
+      await reorderTemplates(supabase, orderedIds);
+    },
+    [supabase]
+  );
+
+  const handleReorderSnippets = useCallback(
+    async (orderedIds: string[]) => {
+      if (!activeTemplateId) return;
+      // Optimistic: reorder snippets in the active template
+      setTemplates((prev) =>
+        prev.map((t) => {
+          if (t.id !== activeTemplateId) return t;
+          const map = new Map(t.snippets.map((s) => [s.id, s]));
+          return {
+            ...t,
+            snippets: orderedIds
+              .map((id, i) => {
+                const s = map.get(id);
+                return s ? { ...s, sort_order: i } : null;
+              })
+              .filter(Boolean) as Snippet[],
+          };
+        })
+      );
+      await reorderSnippets(supabase, orderedIds);
+    },
+    [supabase, activeTemplateId]
+  );
+
   // ── Snippet operations ────────────────────────────────────
 
   const handleAddSnippet = useCallback(async () => {
@@ -353,8 +396,8 @@ export function PromptComposer({
         activeTemplateId={activeTemplateId}
         onSelect={setActiveTemplateId}
         onAdd={handleAddTemplate}
-        onDelete={handleDeleteTemplate}
         onRename={handleRenameTemplate}
+        onReorder={handleReorderTemplates}
       />
       <div
         style={{
@@ -370,10 +413,14 @@ export function PromptComposer({
           templateTypes={templateTypes}
           activeType={activeType}
           masterSnippets={masterSnippets}
+          canDeleteTemplate={templates.length > 1}
           onSave={handleSaveSnippet}
           onDelete={handleDeleteSnippet}
           onToggle={handleToggleSnippet}
           onAdd={handleAddSnippet}
+          onDeleteTemplate={() => {
+            if (activeTemplateId) handleDeleteTemplate(activeTemplateId);
+          }}
           onRenameTemplate={(name) => {
             if (activeTemplateId) handleRenameTemplate(activeTemplateId, name);
           }}
@@ -383,6 +430,7 @@ export function PromptComposer({
           onCreateType={(name) => {
             if (activeTemplateId) handleCreateType(name, activeTemplateId);
           }}
+          onReorderSnippets={handleReorderSnippets}
           usedCategories={usedCategories}
         />
         <div style={{ display: "flex", flexDirection: "column" }}>

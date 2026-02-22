@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import type { TemplateWithSnippets, TemplateType } from "@/lib/prompt-composer/types";
 
 interface TemplateBarProps {
@@ -9,8 +9,8 @@ interface TemplateBarProps {
   activeTemplateId: string;
   onSelect: (id: string) => void;
   onAdd: () => void;
-  onDelete: (id: string) => void;
   onRename: (id: string, name: string) => void;
+  onReorder: (orderedIds: string[]) => void;
 }
 
 export function TemplateBar({
@@ -19,17 +19,57 @@ export function TemplateBar({
   activeTemplateId,
   onSelect,
   onAdd,
-  onDelete,
   onRename,
+  onReorder,
 }: TemplateBarProps) {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameVal, setRenameVal] = useState("");
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const dragIdRef = useRef<string | null>(null);
 
   const commitRename = () => {
     if (renamingId && renameVal.trim()) {
       onRename(renamingId, renameVal.trim());
     }
     setRenamingId(null);
+  };
+
+  const handleDragStart = (id: string) => {
+    dragIdRef.current = id;
+  };
+
+  const handleDragOver = (e: React.DragEvent, id: string) => {
+    e.preventDefault();
+    if (dragIdRef.current && dragIdRef.current !== id) {
+      setDragOverId(id);
+    }
+  };
+
+  const handleDrop = (targetId: string) => {
+    const fromId = dragIdRef.current;
+    if (!fromId || fromId === targetId) {
+      setDragOverId(null);
+      dragIdRef.current = null;
+      return;
+    }
+
+    const ids = templates.map((t) => t.id);
+    const fromIdx = ids.indexOf(fromId);
+    const toIdx = ids.indexOf(targetId);
+    if (fromIdx === -1 || toIdx === -1) return;
+
+    // Move the dragged item to the target position
+    ids.splice(fromIdx, 1);
+    ids.splice(toIdx, 0, fromId);
+
+    onReorder(ids);
+    setDragOverId(null);
+    dragIdRef.current = null;
+  };
+
+  const handleDragEnd = () => {
+    setDragOverId(null);
+    dragIdRef.current = null;
   };
 
   return (
@@ -66,6 +106,7 @@ export function TemplateBar({
         const isMaster = type
           ? type.master_template_id === t.id
           : false;
+        const isDragOver = dragOverId === t.id;
 
         if (renamingId === t.id) {
           return (
@@ -94,7 +135,15 @@ export function TemplateBar({
         }
 
         return (
-          <div key={t.id} style={{ position: "relative", flexShrink: 0 }}>
+          <div
+            key={t.id}
+            style={{ position: "relative", flexShrink: 0 }}
+            draggable
+            onDragStart={() => handleDragStart(t.id)}
+            onDragOver={(e) => handleDragOver(e, t.id)}
+            onDrop={() => handleDrop(t.id)}
+            onDragEnd={handleDragEnd}
+          >
             <button
               onClick={() => onSelect(t.id)}
               onDoubleClick={() => {
@@ -106,10 +155,14 @@ export function TemplateBar({
                 fontWeight: active ? 700 : 500,
                 padding: "4px 12px",
                 borderRadius: 7,
-                border: active ? "2px solid #4F46E5" : "1.5px solid #E2E8F0",
-                background: active ? "#EEF2FF" : "#fff",
+                border: active
+                  ? "2px solid #4F46E5"
+                  : isDragOver
+                    ? "2px solid #818CF8"
+                    : "1.5px solid #E2E8F0",
+                background: active ? "#EEF2FF" : isDragOver ? "#F5F3FF" : "#fff",
                 color: active ? "#4338CA" : "#64748B",
-                cursor: "pointer",
+                cursor: "grab",
                 fontFamily: "inherit",
                 transition: "all 0.15s",
                 display: "inline-flex",
@@ -147,33 +200,6 @@ export function TemplateBar({
                 </span>
               )}
             </button>
-            {templates.length > 1 && active && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(t.id);
-                }}
-                title="Delete template"
-                style={{
-                  position: "absolute",
-                  top: -5,
-                  right: -5,
-                  width: 15,
-                  height: 15,
-                  borderRadius: 8,
-                  background: "#EF4444",
-                  color: "#fff",
-                  border: "none",
-                  fontSize: 9,
-                  lineHeight: "15px",
-                  textAlign: "center",
-                  cursor: "pointer",
-                  padding: 0,
-                }}
-              >
-                ×
-              </button>
-            )}
           </div>
         );
       })}
@@ -204,7 +230,7 @@ export function TemplateBar({
           flexShrink: 0,
         }}
       >
-        double-click to rename
+        double-click to rename · drag to reorder
       </span>
     </div>
   );

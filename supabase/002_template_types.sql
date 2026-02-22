@@ -2,6 +2,7 @@
 -- Run this in the Supabase SQL Editor AFTER running 001_prompt_composer.sql
 
 -- 1. Change snippets.category from enum to plain text (needed for custom category names)
+ALTER TABLE public.snippets ALTER COLUMN category DROP DEFAULT;
 ALTER TABLE public.snippets ALTER COLUMN category TYPE text;
 DROP TYPE IF EXISTS public.snippet_category;
 

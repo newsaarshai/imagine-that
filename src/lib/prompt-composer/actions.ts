@@ -272,6 +272,36 @@ export async function deleteSnippet(
   await supabase.from("snippets").delete().eq("id", snippetId);
 }
 
+// ── Reorder operations ──────────────────────────────────────────
+
+export async function reorderTemplates(
+  supabase: SupabaseClient,
+  orderedIds: string[]
+): Promise<void> {
+  await Promise.all(
+    orderedIds.map((id, i) =>
+      supabase
+        .from("templates")
+        .update({ sort_order: i, updated_at: new Date().toISOString() })
+        .eq("id", id)
+    )
+  );
+}
+
+export async function reorderSnippets(
+  supabase: SupabaseClient,
+  orderedIds: string[]
+): Promise<void> {
+  await Promise.all(
+    orderedIds.map((id, i) =>
+      supabase
+        .from("snippets")
+        .update({ sort_order: i, updated_at: new Date().toISOString() })
+        .eq("id", id)
+    )
+  );
+}
+
 // ── Placeholder values ──────────────────────────────────────────
 
 export async function upsertPlaceholderValue(

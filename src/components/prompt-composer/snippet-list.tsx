@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import type { Snippet, SnippetCategory, TemplateType } from "@/lib/prompt-composer/types";
 import { SnippetCard } from "./snippet-card";
 
@@ -10,13 +10,16 @@ interface SnippetListProps {
   templateTypes: TemplateType[];
   activeType: TemplateType | null;
   masterSnippets: Snippet[];
+  canDeleteTemplate: boolean;
   onSave: (id: string, changes: { label: string; text: string; category: SnippetCategory }) => void;
   onDelete: (id: string) => void;
   onToggle: (id: string) => void;
   onAdd: () => void;
+  onDeleteTemplate: () => void;
   onRenameTemplate: (name: string) => void;
   onChangeType: (typeId: string | null) => void;
   onCreateType: (name: string) => void;
+  onReorderSnippets: (orderedIds: string[]) => void;
   usedCategories: SnippetCategory[];
 }
 
@@ -26,19 +29,24 @@ export function SnippetList({
   templateTypes,
   activeType,
   masterSnippets,
+  canDeleteTemplate,
   onSave,
   onDelete,
   onToggle,
   onAdd,
+  onDeleteTemplate,
   onRenameTemplate,
   onChangeType,
   onCreateType,
+  onReorderSnippets,
   usedCategories,
 }: SnippetListProps) {
   const [isRenamingTemplate, setIsRenamingTemplate] = useState(false);
   const [renameVal, setRenameVal] = useState("");
   const [isCreatingType, setIsCreatingType] = useState(false);
   const [newTypeName, setNewTypeName] = useState("");
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const dragIdRef = useRef<string | null>(null);
 
   const isMaster = activeType
     ? templateTypes.some(
@@ -70,6 +78,45 @@ export function SnippetList({
     }
     setIsCreatingType(false);
     setNewTypeName("");
+  };
+
+  // ── Snippet drag handlers ──────────────────────────────
+
+  const handleDragStart = (id: string) => {
+    dragIdRef.current = id;
+  };
+
+  const handleDragOver = (e: React.DragEvent, id: string) => {
+    e.preventDefault();
+    if (dragIdRef.current && dragIdRef.current !== id) {
+      setDragOverId(id);
+    }
+  };
+
+  const handleDrop = (targetId: string) => {
+    const fromId = dragIdRef.current;
+    if (!fromId || fromId === targetId) {
+      setDragOverId(null);
+      dragIdRef.current = null;
+      return;
+    }
+
+    const ids = snippets.map((s) => s.id);
+    const fromIdx = ids.indexOf(fromId);
+    const toIdx = ids.indexOf(targetId);
+    if (fromIdx === -1 || toIdx === -1) return;
+
+    ids.splice(fromIdx, 1);
+    ids.splice(toIdx, 0, fromId);
+
+    onReorderSnippets(ids);
+    setDragOverId(null);
+    dragIdRef.current = null;
+  };
+
+  const handleDragEnd = () => {
+    setDragOverId(null);
+    dragIdRef.current = null;
   };
 
   return (
@@ -291,18 +338,73 @@ export function SnippetList({
 
       <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
         {snippets.map((s) => (
-          <SnippetCard
+          <div
             key={s.id}
-            snippet={s}
-            onSave={onSave}
-            onDelete={onDelete}
-            onToggle={onToggle}
-            usedCategories={usedCategories}
-            masterSnippets={masterSnippets}
-            hasType={!!activeType}
-          />
+            draggable
+            onDragStart={() => handleDragStart(s.id)}
+            onDragOver={(e) => handleDragOver(e, s.id)}
+            onDrop={() => handleDrop(s.id)}
+            onDragEnd={handleDragEnd}
+            style={{
+              borderRadius: 12,
+              transition: "box-shadow 0.15s",
+              boxShadow:
+                dragOverId === s.id
+                  ? "0 -2px 0 0 #818CF8"
+                  : "none",
+              cursor: "grab",
+            }}
+          >
+            <SnippetCard
+              snippet={s}
+              onSave={onSave}
+              onDelete={onDelete}
+              onToggle={onToggle}
+              usedCategories={usedCategories}
+              masterSnippets={masterSnippets}
+              hasType={!!activeType}
+            />
+          </div>
         ))}
       </div>
+
+      {/* Delete template button — at the very bottom */}
+      {canDeleteTemplate && (
+        <div
+          style={{
+            marginTop: 24,
+            paddingTop: 16,
+            borderTop: "1px solid #E2E8F0",
+            textAlign: "center",
+          }}
+        >
+          <button
+            onClick={onDeleteTemplate}
+            style={{
+              fontSize: 12,
+              color: "#EF4444",
+              background: "none",
+              border: "1px solid #FECACA",
+              borderRadius: 8,
+              padding: "6px 18px",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              fontWeight: 500,
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "#FEF2F2";
+              e.currentTarget.style.borderColor = "#EF4444";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "none";
+              e.currentTarget.style.borderColor = "#FECACA";
+            }}
+          >
+            Delete Template
+          </button>
+        </div>
+      )}
     </div>
   );
 }
